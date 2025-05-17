@@ -8,10 +8,10 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center">
-          <div className="flex items-center gap-2 font-bold">
+          <Link to="/" className="flex items-center gap-2 font-bold">
             <CircleDotIcon className="h-6 w-6 text-red-600" />
             <span>NBA Analytics Pro</span>
-          </div>
+          </Link>
           <nav className="ml-auto flex gap-4">
             <Link to="/login">
               <Button variant="ghost">Login</Button>
@@ -43,7 +43,7 @@ export default function Home() {
                     </Button>
                   </Link>
                   <Link to="/signup">
-                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                    <Button size="lg" variant="outline" className="border-white text-black hover:bg-white/10 hover:text-white">
                       Sign Up Free
                     </Button>
                   </Link>
@@ -129,10 +129,10 @@ export default function Home() {
       <footer className="border-t bg-gray-100">
         <div className="container flex flex-col gap-4 py-10 md:flex-row md:gap-8">
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 font-bold">
+            <Link to="/" className="flex items-center gap-2 font-bold">
               <CircleDotIcon className="h-6 w-6 text-red-600" />
               <span>NBA Analytics Pro</span>
-            </div>
+            </Link>
             <p className="text-sm text-gray-500">Advanced analytics for basketball professionals</p>
           </div>
           <nav className="ml-auto flex gap-8">

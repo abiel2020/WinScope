@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts"
+import { Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,6 +37,14 @@ export function PlayerComparison({ player }: PlayerComparisonProps) {
 
   return (
     <div className="space-y-6">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center">
+          <Link to="/" className="flex items-center gap-2 font-bold">
+            <span className="h-6 w-6 text-red-600">🏀</span>
+            <span>NBA Analytics Pro</span>
+          </Link>
+        </div>
+      </header>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold">Player Comparison</h3>
