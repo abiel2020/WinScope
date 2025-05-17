@@ -1,5 +1,5 @@
 import express from 'express';
-import { predictPlayerStats, getPredictionsForPlayers } from '../models/predictionModel.js';
+import { getPlayerPredictions } from '../models/predictionModel.js';
 import {getPlayerByID,getPlayerStatsByID, getAllPlayerStats} from '../src/api.js';
 const router = express.Router();
 

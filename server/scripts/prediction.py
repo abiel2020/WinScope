@@ -4,15 +4,17 @@ import os
 import pandas as pd
 import xgboost as xgb
 import numpy as np
+from dotenv import load_dotenv, find_dotenv
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, explained_variance_score
 from sklearn.preprocessing import StandardScaler
 from IPython.display import display
-from sklearn.metrics import mean_squared_error, mean_absolute_error
 import requests  # Add requests library for HTTP calls
+import pymongo
+from datetime import datetime
 # Add the parent directory to the Python path
 
 def get_player_statistics(player_id):
@@ -25,8 +27,10 @@ def get_player_statistics(player_id):
     except requests.exceptions.RequestException as e:
         print(f"Error fetching player statistics: {e}")
         return None
-
-def analyze_player_performance(player_id):
+"""
+    Normalise the data to be used for the model
+"""
+def normalize_player_data(player_id):
     # Get player data from API
     player_data = get_player_statistics(player_id)
     
@@ -94,7 +98,7 @@ def fetch_all_players_data():
                     player_features['NEXT_REB'] = next_game.get('rebounds', 0)
                     player_features['NEXT_AST'] = next_game.get('assists', 0)
                     player_features['NEXT_BLK'] = next_game.get('blocks', 0)
-                    
+                    player_features['NEXT_STL'] = next_game.get('steals', 0)
                     all_data.append(player_features)
             except Exception as e:
                 print(f"Error processing player data: {e}")
@@ -112,9 +116,9 @@ def prepare_features(player_df):
     """
     # Select numerical features only
     numerical_features = player_df.select_dtypes(include=['number']).columns.tolist()
-    
+    print(numerical_features)
     # Remove target variables and non-predictive features
-    features_to_exclude = ['playerId', 'NEXT_PTS', 'NEXT_REB', 'NEXT_AST', 'NEXT_BLK']
+    features_to_exclude = ['playerId', 'NEXT_PTS', 'NEXT_REB', 'NEXT_AST', 'NEXT_BLK', 'NEXT_STL']
     features = [f for f in numerical_features if f not in features_to_exclude]
     
     return features
@@ -154,7 +158,7 @@ def train_prediction_models(save_models=True):
     X_scaled = scaler.fit_transform(X)
     
     # Define target stats
-    targets = ['PTS', 'REB', 'AST', 'BLK']
+    targets = ['PTS', 'REB', 'AST', 'BLK', 'STL']
     target_columns = ['NEXT_' + stat for stat in targets]
     
     # Train a model for each stat
@@ -176,40 +180,78 @@ def train_prediction_models(save_models=True):
         )
         
         # Train RandomForestRegressor
-        model = RandomForestRegressor(
+        model1 = RandomForestRegressor(
             n_estimators=100,
             max_depth=10,
             min_samples_split=5,
             min_samples_leaf=2,
             random_state=42
         )
-        model.fit(X_train, y_train)
-        
+        model2 = xgb.XGBRegressor(
+            n_estimators=100,
+            max_depth=10,
+            learning_rate=0.1,
+            random_state=42
+        )
+        model1.fit(X_train, y_train)
+        model2.fit(X_train, y_train)
         # Evaluate
-        y_pred = model.predict(X_test)
-        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-        mae = mean_absolute_error(y_test, y_pred)
+        y_pred_RFR = model1.predict(X_test)
+        y_pred_XGB = model2.predict(X_test)
+        
+        # Calculate metrics for RandomForestRegressor
+        rmse_rfr = np.sqrt(mean_squared_error(y_test, y_pred_RFR))
+        mae_rfr = mean_absolute_error(y_test, y_pred_RFR)
+        r2_rfr = r2_score(y_test, y_pred_RFR)
+        evs_rfr = explained_variance_score(y_test, y_pred_RFR)
+        
+        # Calculate metrics for XGBRegressor
+        rmse_xgb = np.sqrt(mean_squared_error(y_test, y_pred_XGB))
+        mae_xgb = mean_absolute_error(y_test, y_pred_XGB)
+        r2_xgb = r2_score(y_test, y_pred_XGB)
+        evs_xgb = explained_variance_score(y_test, y_pred_XGB)
+        
+        # Compare models and store the best one
+        if rmse_rfr < rmse_xgb and mae_rfr < mae_xgb:
+            best_model = model1
+            best_metrics = {
+                'RMSE': rmse_rfr,
+                'MAE': mae_rfr,
+                'R2': r2_rfr,
+                'Explained Variance': evs_rfr,
+                'model_type': 'RandomForestRegressor'
+            }
+        else:
+            best_model = model2
+            best_metrics = {
+                'RMSE': rmse_xgb,
+                'MAE': mae_xgb,
+                'R2': r2_xgb,
+                'Explained Variance': evs_xgb,
+                'model_type': 'XGBRegressor'
+            }
         
         # Store performance metrics
-        performance[target] = {
-            'RMSE': rmse,
-            'MAE': mae
-        }
+        performance[target] = best_metrics
         
-        # Get feature importance
-        importance = model.feature_importances_
+        # Get feature importance from the best model
+        importance = best_model.feature_importances_
         feature_importance = pd.DataFrame({
             'Feature': features,
             'Importance': importance
         }).sort_values('Importance', ascending=False)
         
         print(f"\n{target} Model Performance:")
-        print(f"RMSE: {rmse:.2f}, MAE: {mae:.2f}")
-        print(f"Top 5 important features for {target}:")
+        print(f"Best Model: {best_metrics['model_type']}")
+        print(f"RMSE: {best_metrics['RMSE']:.2f}")
+        print(f"MAE: {best_metrics['MAE']:.2f}")
+        print(f"R² Score: {best_metrics['R2']:.2f}")
+        print(f"Explained Variance: {best_metrics['Explained Variance']:.2f}")
+        print(f"\nTop 5 important features for {target}:")
         print(feature_importance.head(5).to_string(index=False))
         
-        # Store model
-        models[target] = model
+        # Store best model
+        models[target] = best_model
     
     # Save models and scaler if requested
     if save_models:
@@ -280,6 +322,61 @@ def load_prediction_models():
         print("Training new models...")
         return train_prediction_models()
 
+def store_prediction_in_mongodb(player_data, predictions):
+    """
+    Store player predictions in MongoDB.
+    
+    Args:
+        player_data (dict): Player information and stats
+        predictions (dict): Predicted stats
+        models (dict): Trained models
+        
+    Returns:
+        str: MongoDB document ID if successful, None otherwise
+    """
+    try:
+        load_dotenv(find_dotenv())
+
+        # Connect to MongoDB with proper SSL settings
+        client = pymongo.MongoClient(
+            os.getenv('MONGODB_URI'),
+            tls=True,
+            tlsAllowInvalidCertificates=False,
+            serverSelectionTimeoutMS=5000
+        )
+        db = client['test']
+        dbs = client.list_database_names()
+        print("databases", dbs)
+
+        predictions_collection = db['Predictions']
+        player_stats_collection = db['playerstats']
+        # Prepare prediction document
+        prediction_doc = {
+            'playerId': str(player_data['player_info']['playerId'].values[0]),
+            'playerName': player_data['player_info']['name'].values[0],
+            'team': player_data['player_info']['team'].values[0],
+            'predictionDate': datetime.now(),
+            'predictedStats': {
+                'points': float(predictions.get('PTS', 0)),
+                'rebounds': float(predictions.get('REB', 0)),
+                'assists': float(predictions.get('AST', 0)),
+                'blocks': float(predictions.get('BLK', 0)),
+                'steals': float(predictions.get('STL', 0))
+            },
+            'isVerified': False
+        }
+        stats = player_stats_collection.find_one({'playerId': str(player_data['player_info']['playerId'].values[0])})
+        print(stats)
+        # Store prediction in MongoDB
+        result = predictions_collection.insert_one(prediction_doc)
+        print(f"Prediction stored in MongoDB with ID: {result.inserted_id}")
+        return str(result.inserted_id)
+        
+    except Exception as e:
+        print(f"Error storing prediction in MongoDB: {e}")
+        return None
+    finally:
+        client.close()
 
 def predict_player_next_game(player_id):
     """
@@ -292,7 +389,7 @@ def predict_player_next_game(player_id):
         dict: Predicted stats for the player's next game
     """
     # Get player data
-    player_data = analyze_player_performance(player_id)
+    player_data = normalize_player_data(player_id)
     
     if player_data is None:
         print(f"Could not fetch data for player {player_id}")
@@ -326,7 +423,6 @@ def predict_player_next_game(player_id):
         if feature in player_features:
             feature_values.append(player_features[feature])
         else:
-            # If feature is missing, use 0 (you might want a better strategy)
             feature_values.append(0)
     
     # Scale features
@@ -339,6 +435,9 @@ def predict_player_next_game(player_id):
         pred_value = model.predict(player_features_scaled)[0]
         predictions[stat] = max(0, pred_value)  # Ensure non-negative predictions
     
+    # Store predictions in MongoDB
+    store_prediction_in_mongodb(player_data, predictions)
+    
     return predictions
 
 def display_player_prediction(player_id):
@@ -346,7 +445,19 @@ def display_player_prediction(player_id):
     Display a player's performance prediction in a readable format.
     """
     # Get player info
-    player_data = analyze_player_performance(player_id)
+    player_data = normalize_player_data(player_id)
+    if player_data:
+            print("\nPlayer Info")
+            print(player_data['player_info'].to_string(index=False))
+            print("\nAverage Stats:")
+            print(player_data['average_stats'].to_string(index=False))
+            print("\nRolling Averages (Last 5):")
+            print(player_data['rolling_averages'].to_string(index=False))
+            print("\nRecent Performances:")
+            print(player_data['recent_performances'].to_string(index=False))
+
+             # Make predictions
+            print("\n=== Performance Prediction ===")
     
     if player_data is None:
         print(f"Could not fetch data for player {player_id}")
@@ -364,10 +475,11 @@ def display_player_prediction(player_id):
     
     # Display results
     print(f"\n=== Next Game Predictions for {player_name} ({player_team}) ===")
-    print(f"Points: {predictions['PTS']:.1f}")
-    print(f"Rebounds: {predictions['REB']:.1f}")
-    print(f"Assists: {predictions['AST']:.1f}")
-    print(f"Blocks: {predictions['BLK']:.1f}")
+    print(f"Points: {predictions.get('PTS', 0):.1f}")
+    print(f"Rebounds: {predictions.get('REB', 0):.1f}")
+    print(f"Assists: {predictions.get('AST', 0):.1f}")
+    print(f"Blocks: {predictions.get('BLK', 0):.1f}")
+    print(f"Steals: {predictions.get('STL', 0):.1f}")
     
     # Show recent performance for comparison
     recent_games = player_data['recent_performances']
@@ -378,10 +490,9 @@ def display_player_prediction(player_id):
         print(f"Rebounds: {recent.get('rebounds', 0)}")
         print(f"Assists: {recent.get('assists', 0)}")
         print(f"Blocks: {recent.get('blocks', 0)}")
+        print(f"Steals: {recent.get('steals', 0)}")
 
-def store_player_prediction(player_id, player_data):
-    
-    return None
+
 
 if __name__ == "__main__":
     # Example usage
@@ -391,17 +502,20 @@ if __name__ == "__main__":
             # Train models
             print("Training prediction models...")
             train_prediction_models()
-        elif sys.argv[1] == "predict" and len(sys.argv) > 2:
+        elif sys.argv[1] == "predict":
+            all_players = fetch_all_players_data()
+            print(all_players)
+            for _, player in all_players.iterrows():
+                display_player_prediction(player['playerId'])
             # Predict for a specific player
-            player_id = int(sys.argv[2])
-            display_player_prediction(player_id)
+            # player_id = int(sys.argv[2])
+            # display_player_prediction(player_id)
         else:
             print("Usage: python prediction.py [train|predict player_id]")
     else:
         # Example usage
         print("\n=== Player Analysis ===")
-        player_data = analyze_player_performance(4278073)
-        # store_prediction(player_id, player_data)
+        player_data = normalize_player_data(4278073)
         if player_data:
             print("\nPlayer Info")
             print(player_data['player_info'].to_string(index=False))
@@ -414,9 +528,6 @@ if __name__ == "__main__":
 
              # Make predictions
             print("\n=== Performance Prediction ===")
-            # display_player_prediction(player_id)
         else:
             print("No player data available")
-        # all_players = fetch_all_players_data()
-        # print(all_players.to_string(index=False))
 
