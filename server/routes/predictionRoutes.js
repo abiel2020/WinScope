@@ -1,6 +1,5 @@
 import express from 'express';
-import { getPlayerPredictions } from '../models/predictionModel.js';
-import {getPlayerByID,getPlayerStatsByID, getAllPlayerStats} from '../src/api.js';
+import {getPlayerByID,getPlayerStatsByID, getAllPlayerStats,getPlayerPredictions} from '../src/api.js';
 const router = express.Router();
 
 /**
@@ -64,10 +63,10 @@ router.get('/playerStats/:playerId', async (req, res) => {
  */
 router.get('/playerPrediction/:playerId', async (req, res) => {
   try {
-    const prediction = await axios.get('http://localhost:5000/prediction/',{
-      player_id: playerId
-    });
-    return res.json(prediction);
+    const { playerId } = req.params;
+    // Fetch predictions for the player from MongoDB
+    const predictions = await getPlayerPredictions(playerId);
+    return res.json(predictions);
   } catch (error) {
     console.error('Error getting player prediction:', error);
     res.status(500).json({ 

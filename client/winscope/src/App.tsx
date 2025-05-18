@@ -4,6 +4,12 @@ import LoginPage from './pages/Login'
 import Home from './pages/Home'
 import { SignupPage } from './pages/Signup'
 import PlayerPage from './pages/player/[id]/page'
+import { ReactNode } from 'react'
+
+function PrivateRoute({ children }: { children: ReactNode }) {
+  const token = localStorage.getItem('token')
+  return token ? children : <Navigate to="/login" />
+}
 
 function App() {
   return (
@@ -12,8 +18,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/player/:id" element={<PlayerPage />} />
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/player/:id" element={<PrivateRoute><PlayerPage /></PrivateRoute>} />
       </Routes>
     </Router>
   )

@@ -9,44 +9,56 @@ interface PlayerStatsProps {
 
 export function PlayerStats({ player }: PlayerStatsProps) {
   // Transform recent games data for the chart
-  const chartData = player.recentGames.map((game: any) => ({
+  const chartData = player.recentGames?.map((game: any) => ({
     name: game.opponent,
     Points: game.points,
     Rebounds: game.rebounds,
     Assists: game.assists,
-  }))
+  })) || []
+
+  // Get all stat keys and values
+  const statEntries = player.stats ? Object.entries(player.stats) : []
 
   return (
     <div className="space-y-6">
       <div>
         <h3 className="mb-4 text-lg font-semibold">Season Averages</h3>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
-          <div className="rounded-lg border bg-card p-3 text-center shadow-sm">
-            <p className="text-xs font-medium text-gray-500">PPG</p>
-            <p className="text-2xl font-bold">{player.ppg}</p>
-          </div>
-          <div className="rounded-lg border bg-card p-3 text-center shadow-sm">
-            <p className="text-xs font-medium text-gray-500">RPG</p>
-            <p className="text-2xl font-bold">{player.rpg}</p>
-          </div>
-          <div className="rounded-lg border bg-card p-3 text-center shadow-sm">
-            <p className="text-xs font-medium text-gray-500">APG</p>
-            <p className="text-2xl font-bold">{player.apg}</p>
-          </div>
-          <div className="rounded-lg border bg-card p-3 text-center shadow-sm">
-            <p className="text-xs font-medium text-gray-500">SPG</p>
-            <p className="text-2xl font-bold">{player.spg}</p>
-          </div>
-          <div className="rounded-lg border bg-card p-3 text-center shadow-sm">
-            <p className="text-xs font-medium text-gray-500">BPG</p>
-            <p className="text-2xl font-bold">{player.bpg}</p>
-          </div>
-          <div className="rounded-lg border bg-card p-3 text-center shadow-sm">
-            <p className="text-xs font-medium text-gray-500">FG%</p>
-            <p className="text-2xl font-bold">{player.fg}%</p>
-          </div>
+          {statEntries.map(([key, value]) => (
+            <div key={key} className="rounded-lg border bg-card p-3 text-center shadow-sm">
+              <p className="text-xs font-medium text-gray-500">{key}</p>
+              <p className="text-2xl font-bold">{String(value)}</p>
+            </div>
+          ))}
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All Stats</CardTitle>
+          <CardDescription>Full list of player stats for the season</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Stat</TableHead>
+                  <TableHead>Value</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {statEntries.map(([key, value]) => (
+                  <TableRow key={key}>
+                    <TableCell className="font-medium">{key}</TableCell>
+                    <TableCell>{String(value)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -81,7 +93,7 @@ export function PlayerStats({ player }: PlayerStatsProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {player.recentGames.map((game: any, index: number) => (
+                {player.recentGames?.map((game: any, index: number) => (
                   <TableRow key={index}>
                     <TableCell className="font-medium">{game.opponent}</TableCell>
                     <TableCell>{game.minutes}</TableCell>

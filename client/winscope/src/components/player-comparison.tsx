@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts"
 import { Link } from "react-router-dom"
 
@@ -10,30 +10,66 @@ interface PlayerComparisonProps {
   player: any
 }
 
+type StatKey = 'PTS' | 'REB' | 'AST' | 'FG' | '3P' | 'STL' | 'BLK' | 'TO' | 'MIN'
+
+interface Player {
+  playerId: string
+  name: string
+  team: string
+  position: string
+  stats: {
+    [key in StatKey]: number
+  }
+}
+
 export function PlayerComparison({ player }: PlayerComparisonProps) {
-  const [comparisonPlayer, setComparisonPlayer] = useState("lebron-james")
+  const [comparisonPlayer, setComparisonPlayer] = useState<string>("")
+  const [players, setPlayers] = useState<Player[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const urlRoot = import.meta.env.VITE_API_URL || ""
 
-  // Mock data for player comparison
-  const comparisonPlayers = [
-    { id: "lebron-james", name: "LeBron James" },
-    { id: "stephen-curry", name: "Stephen Curry" },
-    { id: "kevin-durant", name: "Kevin Durant" },
-    { id: "giannis-antetokounmpo", name: "Giannis Antetokounmpo" },
-    { id: "nikola-jokic", name: "Nikola Jokić" },
-  ]
+  useEffect(() => {
+    async function fetchPlayers() {
+      setLoading(true)
+      setError("")
+      try {
+        const res = await fetch(`${urlRoot}api/predictions/allPlayers`)
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Failed to fetch players")
+        setPlayers(data)
+        // Set initial comparison player to first player in the list
+        if (data.length > 0 && !comparisonPlayer) {
+          setComparisonPlayer(data[0].playerId)
+        }
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPlayers()
+  }, [])
 
-  // Mock data for radar chart
+  if (loading) {
+    return <div className="py-8 text-center">Loading players...</div>
+  }
+  if (error) {
+    return <div className="py-8 text-center text-red-600">{error}</div>
+  }
+
+  const selectedPlayer = players.find(p => p.playerId === comparisonPlayer)
+  if (!selectedPlayer) return null
+
+  // Calculate radar chart data based on actual stats
   const radarData = [
-    { subject: "Scoring", A: 120, B: 110, fullMark: 150 },
-    { subject: "Playmaking", A: 98, B: 130, fullMark: 150 },
-    { subject: "Defense", A: 86, B: 130, fullMark: 150 },
-    { subject: "Rebounding", A: 99, B: 100, fullMark: 150 },
-    { subject: "Efficiency", A: 85, B: 90, fullMark: 150 },
-    { subject: "Clutch", A: 65, B: 85, fullMark: 150 },
+    { subject: "Scoring", A: player.stats.PTS, B: selectedPlayer.stats.PTS, fullMark: 50 },
+    { subject: "Rebounds", A: player.stats.REB, B: selectedPlayer.stats.REB, fullMark: 20 },
+    { subject: "Assists", A: player.stats.AST, B: selectedPlayer.stats.AST, fullMark: 15 },
+    { subject: "Steals", A: player.stats.STL, B: selectedPlayer.stats.STL, fullMark: 3 },
+    { subject: "Blocks", A: player.stats.BLK, B: selectedPlayer.stats.BLK, fullMark: 3 },
+    { subject: "Minutes", A: player.stats.MIN, B: selectedPlayer.stats.MIN, fullMark: 40 },
   ]
-
-  // Mock data for similarity score
-  const similarityScore = 78
 
   return (
     <div className="space-y-6">
@@ -56,8 +92,8 @@ export function PlayerComparison({ player }: PlayerComparisonProps) {
               <SelectValue placeholder="Select player" />
             </SelectTrigger>
             <SelectContent>
-              {comparisonPlayers.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
+              {players.map((p) => (
+                <SelectItem key={p.playerId} value={p.playerId}>
                   {p.name}
                 </SelectItem>
               ))}
@@ -69,12 +105,12 @@ export function PlayerComparison({ player }: PlayerComparisonProps) {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2">
+      <div className="grid gap-6">
+        <Card>
           <CardHeader>
             <CardTitle>Skill Comparison</CardTitle>
             <CardDescription>
-              {player.name} vs. {comparisonPlayers.find((p) => p.id === comparisonPlayer)?.name}
+              {player.name} vs. {selectedPlayer.name}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -83,15 +119,9 @@ export function PlayerComparison({ player }: PlayerComparisonProps) {
                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                   <PolarGrid />
                   <PolarAngleAxis dataKey="subject" />
-                  <PolarRadiusAxis angle={30} domain={[0, 150]} />
+                  <PolarRadiusAxis angle={30} domain={[0, 50]} />
                   <Radar name={player.name} dataKey="A" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
-                  <Radar
-                    name={comparisonPlayers.find((p) => p.id === comparisonPlayer)?.name}
-                    dataKey="B"
-                    stroke="#f59e0b"
-                    fill="#f59e0b"
-                    fillOpacity={0.6}
-                  />
+                  <Radar name={selectedPlayer.name} dataKey="B" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.6} />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
@@ -102,7 +132,7 @@ export function PlayerComparison({ player }: PlayerComparisonProps) {
               </div>
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full bg-amber-500"></div>
-                <span className="text-sm">{comparisonPlayers.find((p) => p.id === comparisonPlayer)?.name}</span>
+                <span className="text-sm">{selectedPlayer.name}</span>
               </div>
             </div>
           </CardContent>
@@ -110,99 +140,51 @@ export function PlayerComparison({ player }: PlayerComparisonProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Similarity Score</CardTitle>
-            <CardDescription>Based on playing style and statistics</CardDescription>
+            <CardTitle>Statistical Comparison</CardTitle>
+            <CardDescription>Season averages comparison</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center">
-              <div className="relative mb-4 flex h-40 w-40 items-center justify-center rounded-full border-8 border-gray-100">
-                <div
-                  className="absolute inset-0 rounded-full border-8 border-blue-500"
-                  style={{
-                    clipPath: `polygon(0 0, 100% 0, 100% 100%, 0% 100%, 0 0, 0 ${100 - similarityScore}%, ${similarityScore}% ${100 - similarityScore}%, ${similarityScore}% 0%, 0 0)`,
-                  }}
-                ></div>
-                <span className="text-4xl font-bold">{similarityScore}%</span>
-              </div>
-              <p className="text-center text-sm text-gray-500">
-                {player.name} and {comparisonPlayers.find((p) => p.id === comparisonPlayer)?.name} have a{" "}
-                {similarityScore}% similarity in their playing style and statistical output.
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 text-left font-medium">Stat</th>
+                    <th className="py-2 text-center font-medium">{player.name}</th>
+                    <th className="py-2 text-center font-medium">{selectedPlayer.name}</th>
+                    <th className="py-2 text-center font-medium">Difference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(player.stats).map(([key, value]) => {
+                    const statKey = key as StatKey
+                    const comparisonValue = selectedPlayer.stats[statKey]
+                    const diff = Number(value) - Number(comparisonValue)
+                    const diffColor = diff > 0 ? "text-green-600" : diff < 0 ? "text-red-600" : ""
+                    const diffPrefix = diff > 0 ? "+" : ""
+                    
+                    return (
+                      <tr key={key} className="border-b">
+                        <td className="py-2 text-left">{key}</td>
+                        <td className="py-2 text-center">{Number(value).toFixed(1)}</td>
+                        <td className="py-2 text-center">{Number(comparisonValue).toFixed(1)}</td>
+                        <td className={`py-2 text-center ${diffColor}`}>
+                          {diff !== 0 ? `${diffPrefix}${diff.toFixed(1)}` : "0.0"}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 text-center text-sm text-gray-500">
+              <p>
+                This comparison is based on the current season statistics and may not reflect career averages or peak
+                performance.
               </p>
-              <div className="mt-6 grid w-full grid-cols-2 gap-2 text-center">
-                <div className="rounded-lg bg-gray-50 p-2">
-                  <p className="text-xs font-medium text-gray-500">Strengths</p>
-                  <p className="text-sm">Scoring, Playmaking</p>
-                </div>
-                <div className="rounded-lg bg-gray-50 p-2">
-                  <p className="text-xs font-medium text-gray-500">Differences</p>
-                  <p className="text-sm">Defense, Clutch</p>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Statistical Comparison</CardTitle>
-          <CardDescription>Season averages comparison</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2 text-left font-medium">Stat</th>
-                  <th className="py-2 text-center font-medium">{player.name}</th>
-                  <th className="py-2 text-center font-medium">
-                    {comparisonPlayers.find((p) => p.id === comparisonPlayer)?.name}
-                  </th>
-                  <th className="py-2 text-center font-medium">Difference</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b">
-                  <td className="py-2 text-left">PPG</td>
-                  <td className="py-2 text-center">{player.ppg}</td>
-                  <td className="py-2 text-center">27.1</td>
-                  <td className="py-2 text-center text-green-600">+1.4</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2 text-left">RPG</td>
-                  <td className="py-2 text-center">{player.rpg}</td>
-                  <td className="py-2 text-center">7.1</td>
-                  <td className="py-2 text-center text-green-600">+0.2</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2 text-left">APG</td>
-                  <td className="py-2 text-center">{player.apg}</td>
-                  <td className="py-2 text-center">7.5</td>
-                  <td className="py-2 text-center text-red-600">-0.8</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2 text-left">FG%</td>
-                  <td className="py-2 text-center">{player.fg}%</td>
-                  <td className="py-2 text-center">49.5%</td>
-                  <td className="py-2 text-center text-green-600">+4.0%</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2 text-left">3PT%</td>
-                  <td className="py-2 text-center">{player.threept}%</td>
-                  <td className="py-2 text-center">35.2%</td>
-                  <td className="py-2 text-center text-green-600">+3.4%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-4 text-center text-sm text-gray-500">
-            <p>
-              This comparison is based on the current season statistics and may not reflect career averages or peak
-              performance.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 } 

@@ -14,6 +14,9 @@ interface Player {
   apg: number
   image: string
   trend: "up" | "down" | "stable"
+  teamLogo: string
+  stats: any
+  playerId: number
 }
 
 interface PlayerCardProps {
@@ -36,46 +39,43 @@ export function PlayerCard({ player }: PlayerCardProps) {
 
   return (
     <Card className="overflow-hidden transition-all hover:shadow-md">
-      <CardHeader className="p-0">
-        <div className="relative h-40 bg-gradient-to-r from-blue-900 to-blue-700">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <img
-              src={player.image || "/placeholder.svg"}
-              alt={player.name}
-              className="h-28 w-28 rounded-full border-4 border-white object-cover"
-            />
-          </div>
+      <CardHeader className="flex flex-row items-center gap-4">
+        <img
+          src={player.teamLogo || "/placeholder.svg"}
+          alt={player.team}
+          className="h-10 w-10 rounded-full object-cover"
+        />
+        <div>
+          <h3 className="text-lg font-bold">{player.name}</h3>
+          <p className="text-sm text-gray-500">{player.position} | {player.team}</p>
         </div>
       </CardHeader>
-      <CardContent className="p-4 text-center">
-        <h3 className="mb-1 text-xl font-bold">{player.name}</h3>
-        <p className="mb-3 text-sm text-gray-500">
-          {player.position} | {player.team}
-        </p>
-        <div className="grid grid-cols-3 gap-2 text-center">
+      <CardContent>
+        <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
-            <p className="text-xs text-gray-500">PPG</p>
-            <p className="text-lg font-semibold">{player.ppg}</p>
+            <span className="font-medium">PTS:</span> {player.stats?.PTS ?? "-"}
           </div>
           <div>
-            <p className="text-xs text-gray-500">RPG</p>
-            <p className="text-lg font-semibold">{player.rpg}</p>
+            <span className="font-medium">REB:</span> {player.stats?.REB ?? "-"}
           </div>
           <div>
-            <p className="text-xs text-gray-500">APG</p>
-            <p className="text-lg font-semibold">{player.apg}</p>
+            <span className="font-medium">AST:</span> {player.stats?.AST ?? "-"}
           </div>
-        </div>
-        <div className="mt-3 flex items-center justify-center gap-1">
-          <span className="text-sm font-medium">Trend:</span>
-          {getTrendIcon(player.trend)}
+          <div>
+            <span className="font-medium">FG%:</span> {player.stats?.["FG%"] ?? "-"}
+          </div>
+          <div>
+            <span className="font-medium">3P%:</span> {player.stats?.["3P%"] ?? "-"}
+          </div>
+          <div>
+            <span className="font-medium">MIN:</span> {player.stats?.MIN ?? "-"}
+          </div>
         </div>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
-        <Link to={`/player/${player.id}`} className="w-full">
-          <Button className="w-full" variant="outline">
+      <CardFooter>
+        <Link to={`/player/${player.playerId}`} className="w-full">
+          <Button variant="outline" size="sm" className="w-full">
             View Analysis
-            <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </Link>
       </CardFooter>

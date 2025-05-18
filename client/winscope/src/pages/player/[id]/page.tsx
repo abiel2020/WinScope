@@ -1,7 +1,6 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link, useParams } from "react-router-dom"
 import { ArrowLeft, CircleDotIcon, Bell, LogOut, Settings, Star, User } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -17,108 +16,40 @@ import { PlayerStats } from "@/components/player-stats"
 import { PlayerPredictions } from "@/components/player-predictions"
 import { PlayerComparison } from "@/components/player-comparison"
 
-// Mock data for players
-const players = [
-  {
-    id: "1",
-    name: "LeBron James",
-    team: "Los Angeles Lakers",
-    position: "SF",
-    age: 39,
-    height: "6'9\"",
-    weight: "250 lbs",
-    college: "None",
-    drafted: "2003 - Round 1, Pick 1",
-    ppg: 25.7,
-    rpg: 7.3,
-    apg: 8.3,
-    spg: 1.1,
-    bpg: 0.5,
-    fg: 53.5,
-    threept: 38.6,
-    ft: 75.8,
-    image: "/placeholder.svg?height=300&width=300",
-    bio: "LeBron James is an American professional basketball player for the Los Angeles Lakers. Widely considered one of the greatest players of all time, James has won four NBA championships, four NBA MVP awards, and two Olympic gold medals.",
-    predictions: {
-      nextGame: {
-        opponent: "Golden State Warriors",
-        points: 28,
-        rebounds: 8,
-        assists: 9,
-        confidence: 85,
-      },
-      season: {
-        ppg: 26.2,
-        rpg: 7.5,
-        apg: 8.1,
-        winShare: 9.8,
-        per: 25.3,
-        confidence: 92,
-      },
-    },
-    recentGames: [
-      { opponent: "MIA", points: 28, rebounds: 10, assists: 11, minutes: 38 },
-      { opponent: "BOS", points: 32, rebounds: 7, assists: 9, minutes: 36 },
-      { opponent: "PHI", points: 25, rebounds: 8, assists: 10, minutes: 35 },
-      { opponent: "MIL", points: 30, rebounds: 6, assists: 8, minutes: 37 },
-      { opponent: "NYK", points: 27, rebounds: 9, assists: 7, minutes: 34 },
-    ],
-  },
-  {
-    id: "2",
-    name: "Stephen Curry",
-    team: "Golden State Warriors",
-    position: "PG",
-    age: 36,
-    height: "6'2\"",
-    weight: "185 lbs",
-    college: "Davidson",
-    drafted: "2009 - Round 1, Pick 7",
-    ppg: 29.4,
-    rpg: 6.1,
-    apg: 6.3,
-    spg: 1.3,
-    bpg: 0.2,
-    fg: 49.1,
-    threept: 42.8,
-    ft: 91.5,
-    image: "/placeholder.svg?height=300&width=300",
-    bio: "Stephen Curry is an American professional basketball player for the Golden State Warriors. He is widely regarded as one of the greatest basketball players of all time and the greatest shooter in NBA history.",
-    predictions: {
-      nextGame: {
-        opponent: "Los Angeles Lakers",
-        points: 32,
-        rebounds: 5,
-        assists: 7,
-        confidence: 88,
-      },
-      season: {
-        ppg: 30.1,
-        rpg: 5.8,
-        apg: 6.5,
-        winShare: 10.2,
-        per: 26.8,
-        confidence: 90,
-      },
-    },
-    recentGames: [
-      { opponent: "LAC", points: 35, rebounds: 5, assists: 8, minutes: 36 },
-      { opponent: "DEN", points: 28, rebounds: 6, assists: 7, minutes: 34 },
-      { opponent: "PHX", points: 33, rebounds: 4, assists: 9, minutes: 35 },
-      { opponent: "SAC", points: 30, rebounds: 7, assists: 6, minutes: 33 },
-      { opponent: "POR", points: 38, rebounds: 5, assists: 8, minutes: 37 },
-    ],
-  },
-]
+const urlRoot = import.meta.env.VITE_API_URL || ""
 
 export default function PlayerPage() {
   const params = useParams()
   const playerId = params.id
-
-  // Find the player based on the ID from the URL
-  const player = players.find((p) => p.id === playerId) || players[0]
-
+  const [player, setPlayer] = useState<any>(null)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    async function fetchPlayer() {
+      setLoading(true)
+      setError("")
+      try {
+        const res = await fetch(`${urlRoot}api/predictions/player/${playerId}`)
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Failed to fetch player data")
+        setPlayer(data)
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (playerId) fetchPlayer()
+  }, [playerId])
+
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center">Loading player data...</div>
+  }
+  if (error || !player) {
+    return <div className="flex min-h-screen items-center justify-center text-red-600">{error || "Player not found."}</div>
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -174,7 +105,7 @@ export default function PlayerPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-4">
                 <img
-                  src={player.image || "/placeholder.svg"}
+                  src={player.teamLogo || "/placeholder.svg"}
                   alt={player.name}
                   className="h-20 w-20 rounded-full object-cover"
                 />
@@ -208,20 +139,18 @@ export default function PlayerPage() {
                     <div className="text-sm">{player.team}</div>
                     <div className="text-sm font-medium text-gray-500">Position</div>
                     <div className="text-sm">{player.position}</div>
-                    <div className="text-sm font-medium text-gray-500">Age</div>
-                    <div className="text-sm">{player.age}</div>
-                    <div className="text-sm font-medium text-gray-500">Height</div>
-                    <div className="text-sm">{player.height}</div>
-                    <div className="text-sm font-medium text-gray-500">Weight</div>
-                    <div className="text-sm">{player.weight}</div>
-                    <div className="text-sm font-medium text-gray-500">College</div>
-                    <div className="text-sm">{player.college}</div>
-                    <div className="text-sm font-medium text-gray-500">Drafted</div>
-                    <div className="text-sm">{player.drafted}</div>
+                    <div className="text-sm font-medium text-gray-500">Rank</div>
+                    <div className="text-sm">{player.rank ?? '-'}</div>
+                    <div className="text-sm font-medium text-gray-500">Player ID</div>
+                    <div className="text-sm">{player.playerId}</div>
+                    <div className="text-sm font-medium text-gray-500">Team Logo</div>
+                    <div className="text-sm"><img src={player.teamLogo || "/placeholder.svg"} alt={player.team} className="h-6 w-6 inline-block" /></div>
                   </div>
                   <div className="pt-2">
-                    <div className="text-sm font-medium text-gray-500">Bio</div>
-                    <p className="mt-1 text-sm">{player.bio}</p>
+                    <div className="text-sm font-medium text-gray-500">Player URL</div>
+                    <a href={player.playerUrl} target="_blank" rel="noopener noreferrer" className="mt-1 text-sm text-blue-600 hover:underline">
+                      {player.playerUrl}
+                    </a>
                   </div>
                 </div>
               </CardContent>

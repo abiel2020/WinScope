@@ -10,16 +10,40 @@ import { Label } from "@/components/ui/label"
 export function SignupPage() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const urlRoot = import.meta.env.VITE_API_URL; //Use env variable (.env.development or .env.production)
+  console.log("URL Root:", urlRoot);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-
-    // Simulate signup process
-    setTimeout(() => {
-      setIsLoading(false)
+    setError("")
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+    try {
+      const res = await fetch(`${urlRoot}` + "api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Signup failed")
+      // Optionally auto-login after signup
+      const loginRes = await fetch(`${urlRoot}` +"api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+      const loginData = await loginRes.json()
+      if (!loginRes.ok) throw new Error(loginData.error || "Login after signup failed")
+      localStorage.setItem("token", loginData.token)
       navigate("/dashboard")
-    }, 1500)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -29,49 +53,30 @@ export function SignupPage() {
         <span>NBA Analytics Pro</span>
       </Link>
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-          <CardDescription>Enter your information to create an account</CardDescription>
+        <CardHeader>
+          <CardTitle className="text-2xl">Sign Up</CardTitle>
+          <CardDescription>Create your account to access the dashboard.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="first-name">First name</Label>
-                <Input id="first-name" placeholder="John" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="last-name">Last name</Label>
-                <Input id="last-name" placeholder="Doe" required />
-              </div>
-            </div>
+            {error && <div className="text-red-600 text-sm">{error}</div>}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="john.doe@example.com" required />
+              <Input id="email" name="email" type="email" required autoComplete="email" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
-              <Input id="confirm-password" type="password" required />
+              <Input id="password" name="password" type="password" required autoComplete="new-password" />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
+          <CardFooter className="flex flex-col gap-2">
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
-                </>
-              ) : (
-                "Create account"
-              )}
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Sign Up
             </Button>
-            <div className="text-center text-sm">
-              Already have an account?{" "}
+            <div className="flex w-full justify-between text-sm">
               <Link to="/login" className="text-blue-600 hover:underline">
-                Login
+                Already have an account? Login
               </Link>
             </div>
           </CardFooter>

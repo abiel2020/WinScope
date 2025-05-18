@@ -10,6 +10,13 @@ async function getAllPlayerStats()  {
   return stats;
 }
 
+async function getPlayerPredictions(playerId) {
+  await connectToDatabase();
+  const predictionsCollection = getCollection('Predictions');
+  const predictions = await predictionsCollection.find({ playerId: playerId }).toArray();
+  return predictions;
+}
+
 async function getPlayerByID(playerId) {
   try {
     await connectToDatabase();
@@ -57,4 +64,4 @@ async function getPlayerStatsByID(playerId) {
   }
 }
 
-export {getAllPlayerStats, getPlayerByID, getPlayerStatsByID}
+export {getAllPlayerStats, getPlayerByID, getPlayerStatsByID, getPlayerPredictions}

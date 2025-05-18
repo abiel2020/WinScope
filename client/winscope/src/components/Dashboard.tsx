@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { CircleDotIcon, Bell, LogOut, Search, Settings, User } from "lucide-react"
 
@@ -17,110 +17,53 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PlayerCard } from "@/components/player-card"
 
-// Mock data for players
-const players = [
-  {
-    id: 1,
-    name: "LeBron James",
-    team: "Los Angeles Lakers",
-    position: "SF",
-    ppg: 25.7,
-    rpg: 7.3,
-    apg: 8.3,
-    image: "/placeholder.svg?height=150&width=150",
-    trend: "up",
-  },
-  {
-    id: 2,
-    name: "Stephen Curry",
-    team: "Golden State Warriors",
-    position: "PG",
-    ppg: 29.4,
-    rpg: 6.1,
-    apg: 6.3,
-    image: "/placeholder.svg?height=150&width=150",
-    trend: "stable",
-  },
-  {
-    id: 3,
-    name: "Giannis Antetokounmpo",
-    team: "Milwaukee Bucks",
-    position: "PF",
-    ppg: 28.3,
-    rpg: 11.3,
-    apg: 5.7,
-    image: "/placeholder.svg?height=150&width=150",
-    trend: "up",
-  },
-  {
-    id: 4,
-    name: "Kevin Durant",
-    team: "Phoenix Suns",
-    position: "SF",
-    ppg: 27.1,
-    rpg: 6.9,
-    apg: 5.0,
-    image: "/placeholder.svg?height=150&width=150",
-    trend: "down",
-  },
-  {
-    id: 5,
-    name: "Nikola Jokić",
-    team: "Denver Nuggets",
-    position: "C",
-    ppg: 24.5,
-    rpg: 11.8,
-    apg: 9.8,
-    image: "/placeholder.svg?height=150&width=150",
-    trend: "up",
-  },
-  {
-    id: 6,
-    name: "Joel Embiid",
-    team: "Philadelphia 76ers",
-    position: "C",
-    ppg: 30.6,
-    rpg: 11.7,
-    apg: 4.2,
-    image: "/placeholder.svg?height=150&width=150",
-    trend: "stable",
-  },
-  {
-    id: 7,
-    name: "Luka Dončić",
-    team: "Dallas Mavericks",
-    position: "PG",
-    ppg: 32.4,
-    rpg: 8.6,
-    apg: 9.1,
-    image: "/placeholder.svg?height=150&width=150",
-    trend: "up",
-  },
-  {
-    id: 8,
-    name: "Jayson Tatum",
-    team: "Boston Celtics",
-    position: "SF",
-    ppg: 26.9,
-    rpg: 8.1,
-    apg: 4.3,
-    image: "/placeholder.svg?height=150&width=150",
-    trend: "up",
-  },
-]
+const urlRoot = import.meta.env.VITE_API_URL || ""
 
 export function Dashboard() {
+  const [players, setPlayers] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [positionFilter, setPositionFilter] = useState("all")
+  const [sortBy, setSortBy] = useState("name-asc")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  const filteredPlayers = players.filter((player) => {
+  useEffect(() => {
+    async function fetchPlayers() {
+      setLoading(true)
+      setError("")
+      try {
+        const res = await fetch(`${urlRoot}api/predictions/allPlayers`)
+        const data = await res.json()
+        console.log("Data:", data);
+        if (!res.ok) throw new Error(data.error || "Failed to fetch players")
+        setPlayers(data)
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPlayers()
+  }, [])
+
+  let filteredPlayers = players.filter((player) => {
     const matchesSearch =
       player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       player.team.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesPosition = positionFilter === "all" || player.position === positionFilter
-
     return matchesSearch && matchesPosition
   })
+
+  // Sorting logic
+  if (sortBy === "name-asc") {
+    filteredPlayers = filteredPlayers.sort((a, b) => a.name.localeCompare(b.name))
+  } else if (sortBy === "name-desc") {
+    filteredPlayers = filteredPlayers.sort((a, b) => b.name.localeCompare(a.name))
+  } else if (sortBy === "rank-asc") {
+    filteredPlayers = filteredPlayers.sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999))
+  } else if (sortBy === "rank-desc") {
+    filteredPlayers = filteredPlayers.sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0))
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -197,50 +140,72 @@ export function Dashboard() {
                   <SelectItem value="C">Center (C)</SelectItem>
                 </SelectContent>
               </Select>
+              {/* Sort dropdown */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                  <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                  <SelectItem value="rank-asc">Rank (Low to High)</SelectItem>
+                  <SelectItem value="rank-desc">Rank (High to Low)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <Tabs defaultValue="all" className="mb-6">
-            <TabsList>
-              <TabsTrigger value="all">All Players</TabsTrigger>
-              <TabsTrigger value="trending">Trending</TabsTrigger>
-              <TabsTrigger value="favorites">Favorites</TabsTrigger>
-            </TabsList>
-            <TabsContent value="all" className="mt-4">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredPlayers.map((player) => (
-                  <PlayerCard key={player.id} player={player} />
-                ))}
-              </div>
-              {filteredPlayers.length === 0 && (
+          {loading ? (
+            <div className="flex justify-center items-center py-10">
+              <span>Loading players...</span>
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center py-10 text-red-600">
+              <span>{error}</span>
+            </div>
+          ) : (
+            <Tabs defaultValue="all" className="mb-6">
+              <TabsList>
+                <TabsTrigger value="all">All Players</TabsTrigger>
+                <TabsTrigger value="trending">Trending</TabsTrigger>
+                <TabsTrigger value="favorites">Favorites</TabsTrigger>
+              </TabsList>
+              <TabsContent value="all" className="mt-4">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {filteredPlayers.map((player) => (
+                    <PlayerCard key={player.id || player._id} player={player} />
+                  ))}
+                </div>
+                {filteredPlayers.length === 0 && (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-10">
+                      <p className="mb-2 text-lg font-medium">No players found</p>
+                      <p className="text-center text-gray-500">Try adjusting your search or filter criteria</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+              <TabsContent value="trending" className="mt-4">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {filteredPlayers
+                    .filter((player) => player.trend === "up")
+                    .map((player) => (
+                      <PlayerCard key={player.id || player._id} player={player} />
+                    ))}
+                </div>
+              </TabsContent>
+              <TabsContent value="favorites" className="mt-4">
                 <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-10">
-                    <p className="mb-2 text-lg font-medium">No players found</p>
-                    <p className="text-center text-gray-500">Try adjusting your search or filter criteria</p>
+                  <CardHeader>
+                    <CardTitle>Favorites</CardTitle>
+                    <CardDescription>You haven't added any players to your favorites yet.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button>Browse Players</Button>
                   </CardContent>
                 </Card>
-              )}
-            </TabsContent>
-            <TabsContent value="trending" className="mt-4">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredPlayers
-                  .filter((player) => player.trend === "up")
-                  .map((player) => (
-                    <PlayerCard key={player.id} player={player} />
-                  ))}
-              </div>
-            </TabsContent>
-            <TabsContent value="favorites" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Favorites</CardTitle>
-                  <CardDescription>You haven't added any players to your favorites yet.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button>Browse Players</Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </main>
       <footer className="border-t py-6">

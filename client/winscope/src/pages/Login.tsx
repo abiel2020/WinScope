@@ -10,16 +10,33 @@ import { Label } from "@/components/ui/label"
 export default function LoginPage() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const urlRoot = import.meta.env.VITE_API_URL; //Use env variable (.env.development or .env.production)
+  console.log("URL Root:", urlRoot);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false)
+    setError("")
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+    try {
+      const res = await fetch(  `${urlRoot}` +"api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json()
+      console.log("Data:", data);
+      if (!res.ok) throw new Error(data.error || "Login failed")
+      localStorage.setItem("token", data.token)
       navigate("/dashboard")
-    }, 1500)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -29,40 +46,33 @@ export default function LoginPage() {
         <span>NBA Analytics Pro</span>
       </Link>
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Login</CardTitle>
-          <CardDescription>Enter your email and password to access your account</CardDescription>
+        <CardHeader>
+          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardDescription>Sign in to your account to access the dashboard.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {error && <div className="text-red-600 text-sm">{error}</div>}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="john.doe@example.com" required />
+              <Input id="email" name="email" type="email" required autoComplete="email" />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link to="#" className="text-sm text-blue-600 hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
-              <Input id="password" type="password" required />
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" required autoComplete="current-password" />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
+          <CardFooter className="flex flex-col gap-2">
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
-                </>
-              ) : (
-                "Login"
-              )}
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Login
             </Button>
-            <div className="text-center text-sm">
-              Don&apos;t have an account?{" "}
+            <div className="flex w-full justify-between text-sm">
               <Link to="/signup" className="text-blue-600 hover:underline">
-                Sign up
+                Don&apos;t have an account? Sign up
+              </Link>
+              <Link to="#" className="text-gray-500 hover:underline">
+                Forgot password?
               </Link>
             </div>
           </CardFooter>

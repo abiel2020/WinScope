@@ -350,6 +350,8 @@ def store_prediction_in_mongodb(player_data, predictions):
 
         predictions_collection = db['Predictions']
         player_stats_collection = db['playerstats']
+        #remove the prediction from the collection if it already exists
+        predictions_collection.delete_one({'playerId': str(player_data['player_info']['playerId'].values[0])})
         # Prepare prediction document
         prediction_doc = {
             'playerId': str(player_data['player_info']['playerId'].values[0]),
