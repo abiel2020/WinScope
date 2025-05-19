@@ -51,13 +51,13 @@ export default function Home() {
               </div>
               <div className="mx-auto lg:mr-0 relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-900 to-transparent rounded-lg blur-xl opacity-50 -z-10"></div>
-                <img
+                {/* <img
                   src="/placeholder.svg?height=550&width=450"
                   alt="NBA Analytics Dashboard Preview"
                   className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full lg:order-last"
                   width={550}
                   height={450}
-                />
+                /> */}
               </div>
             </div>
           </div>

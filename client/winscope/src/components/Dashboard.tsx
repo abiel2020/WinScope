@@ -74,7 +74,7 @@ export function Dashboard() {
             <span>NBA Analytics Pro</span>
           </Link>
           <nav className="ml-auto flex items-center gap-4">
-            <Button variant="ghost" size="icon">
+            {/* <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5" />
             </Button>
             <DropdownMenu>
@@ -105,7 +105,7 @@ export function Dashboard() {
                   <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+            </DropdownMenu> */}
           </nav>
         </div>
       </header>
@@ -166,8 +166,7 @@ export function Dashboard() {
             <Tabs defaultValue="all" className="mb-6">
               <TabsList>
                 <TabsTrigger value="all">All Players</TabsTrigger>
-                <TabsTrigger value="trending">Trending</TabsTrigger>
-                <TabsTrigger value="favorites">Favorites</TabsTrigger>
+                {/* <TabsTrigger value="trending">Trending</TabsTrigger> */}
               </TabsList>
               <TabsContent value="all" className="mt-4">
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -192,17 +191,6 @@ export function Dashboard() {
                       <PlayerCard key={player.id || player._id} player={player} />
                     ))}
                 </div>
-              </TabsContent>
-              <TabsContent value="favorites" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Favorites</CardTitle>
-                    <CardDescription>You haven't added any players to your favorites yet.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button>Browse Players</Button>
-                  </CardContent>
-                </Card>
               </TabsContent>
             </Tabs>
           )}

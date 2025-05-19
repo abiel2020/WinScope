@@ -60,16 +60,16 @@ export default function PlayerPage() {
             <span>NBA Analytics Pro</span>
           </Link>
           <nav className="ml-auto flex items-center gap-4">
-            <Button variant="ghost" size="icon">
+            {/* <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5" />
-            </Button>
-            <DropdownMenu>
+            </Button> */}
+            {/* <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <User className="h-5 w-5" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
+              </DropdownMenuTrigger> */}
+              {/* <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">John Doe</p>
@@ -90,8 +90,8 @@ export default function PlayerPage() {
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenuContent> */}
+            {/* </DropdownMenu> */}
           </nav>
         </div>
       </header>
@@ -116,14 +116,14 @@ export default function PlayerPage() {
                   </p>
                 </div>
               </div>
-              <Button
+              {/* <Button
                 variant={isFavorite ? "default" : "outline"}
                 className={isFavorite ? "bg-yellow-500 hover:bg-yellow-600" : ""}
                 onClick={() => setIsFavorite(!isFavorite)}
               >
                 <Star className={`mr-2 h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
                 {isFavorite ? "Favorited" : "Add to Favorites"}
-              </Button>
+              </Button> */}
             </div>
           </div>
 
