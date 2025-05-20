@@ -50,7 +50,7 @@ export function SignupPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
       <Link to="/" className="absolute left-8 top-8 flex items-center gap-2 font-bold md:left-10 md:top-10">
         <CircleDotIcon className="h-6 w-6 text-red-600" />
-        <span>NBA Analytics Pro</span>
+        <span>Winscope</span>
       </Link>
       <Card className="w-full max-w-md">
         <CardHeader>

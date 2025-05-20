@@ -57,7 +57,7 @@ export default function PlayerPage() {
         <div className="container flex h-16 items-center">
           <Link to="/" className="flex items-center gap-2 font-bold">
             <CircleDotIcon className="h-6 w-6 text-red-600" />
-            <span>NBA Analytics Pro</span>
+            <span>Winscope</span>
           </Link>
           <nav className="ml-auto flex items-center gap-4">
             {/* <Button variant="ghost" size="icon">
@@ -69,7 +69,7 @@ export default function PlayerPage() {
                   <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger> */}
-              {/* <DropdownMenuContent className="w-56" align="end" forceMount>
+            {/* <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">John Doe</p>
@@ -187,7 +187,7 @@ export default function PlayerPage() {
       </main>
       <footer className="border-t py-6">
         <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
-          <p className="text-sm text-gray-500">© 2025 NBA Analytics Pro. All rights reserved.</p>
+          <p className="text-sm text-gray-500">© 2025 Winscope. All rights reserved.</p>
           <div className="flex gap-4">
             <Link to="#" className="text-sm text-gray-500 hover:underline">
               Terms

@@ -77,7 +77,7 @@ export function PlayerComparison({ player }: PlayerComparisonProps) {
         <div className="container flex h-16 items-center">
           <Link to="/" className="flex items-center gap-2 font-bold">
             <span className="h-6 w-6 text-red-600">🏀</span>
-            <span>NBA Analytics Pro</span>
+            <span>Winscope</span>
           </Link>
         </div>
       </header>
