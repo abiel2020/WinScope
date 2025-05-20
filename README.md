@@ -42,8 +42,11 @@ WinScope is a modern NBA Player Analytics Dashboard that empowers users to explo
    ```bash
    cd client/winscope
    npm install
+
+   cd server
+   npm install
    ```
-3. **Start the development server:**
+3. **Start the development server and client:**
    ```bash
    npm run dev
    ```
